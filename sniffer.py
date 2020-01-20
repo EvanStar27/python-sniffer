@@ -21,9 +21,9 @@ def parse_ethhdr(packet):
 	smac = get_mac_addr(smac)
 
 	print("[+] Ethernet Layer:")
-	print("    - Destination MAC\t\t\t: %s" %dmac)
-	print("    - Source MAC\t\t\t: %s" %smac)
-	print("    - Protocol\t\t\t\t: %s" %ntohs(proto))
+	print("    - Destination MAC\t: %s" %dmac)
+	print("    - Source MAC\t: %s" %smac)
+	print("    - Protocol\t\t: %s" %ntohs(proto))
 	return packet[14:]
 
 def parse_iphdr(packet):
@@ -33,27 +33,29 @@ def parse_iphdr(packet):
 	ihl = (ver_ihl & 0xF) # 0xF is 1111 binary
 
 	print("\n[+] IP Layer:")
-	print("    - Version\t\t\t\t: IPv%d" %version)
-	print("    - IHL\t\t\t\t: %d" %ihl)
-	print("    - TOS\t\t\t\t: %d" %tos)
-	print("    - TOT LEN\t\t\t\t: %d" %tot_len)
-	print("    - ID\t\t\t\t: %d" %id)
-	print("    - TTL\t\t\t\t: %d" %ttl)
-	print("    - Protocol\t\t\t\t: %d" %proto)
-	print("    - Source IP\t\t\t\t: %s" %inet_ntoa(src))
-	print("    - Destination IP\t\t\t: %s" %inet_ntoa(dest))
+	print("    - Version\t\t: IPv%d" %version)
+	print("    - IHL\t\t: %d" %ihl)
+	print("    - TOS\t\t: %d" %tos)
+	print("    - TOT LEN\t\t: %d" %tot_len)
+	print("    - ID\t\t: %d" %id)
+	print("    - TTL\t\t: %d" %ttl)
+	print("    - Protocol\t\t: %d" %proto)
+	print("    - Source IP\t\t: %s" %inet_ntoa(src))
+	print("    - Destination IP\t: %s" %inet_ntoa(dest))
 	return packet[(ihl*4):]
 
 def parse_tcphdr(packet):
-	sport, dport, seq, ack, data_off_resv, flags, window, check, urg = \
-		unpack("!HHLLBBHHH", packet[:20])
+	sport, dport, seq, ack, data_off_resv, flags  = \
+		unpack("!HHLLBB", packet[:14])
+
+	offset = (data_off_resv >> 4) * 4
 
 	print("\n[+] TCP Layer:")
-	print("    - Source Port\t\t\t: %s" %str(sport))
-	print("    - Destination Port\t\t\t: %s" %str(dport))
-	print("    - Seq /#\t\t\t\t: %s" %str(seq))
-	print("    - Ack /#\t\t\t\t: %s" %str(ack))
-	print("    - Flags\t\t\t\t:", end='')
+	print("    - Source Port\t: %d" %ntohs(sport))
+	print("    - Destination Port\t: %d" %ntohs(dport))
+	print("    - Seq #\t\t: %s" %str(seq))
+	print("    - Ack #\t\t: %s" %str(ack))
+	print("    - Flags\t\t:", end='')
 
 	if (flags):
 		if (flags & FIN == FIN):
@@ -75,7 +77,7 @@ def parse_tcphdr(packet):
 	else:
 		print(" No Flags", end='')
 	print()
-	return packet[20:]
+	return packet[offset:]
 
 def main():
 	fd = socket(AF_PACKET, SOCK_RAW, htons(0x0800))
@@ -85,7 +87,7 @@ def main():
 		packet = parse_ethhdr(packet)
 		packet = parse_iphdr(packet)
 		packet = parse_tcphdr(packet)
-		print("\n\t\t\t*** END ***")
+		print("\n\t\t*** END ***")
 
 if __name__ == "__main__":
 	main()
